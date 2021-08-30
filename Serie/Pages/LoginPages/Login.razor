@@ -1,0 +1,67 @@
+﻿@layout LoginLayout
+@using System.ComponentModel.DataAnnotations
+@page "/Login"
+@inject IJSRuntime jsruntime
+
+<CardGrid>
+    <Form Model="@modelo" OnFinish="LoginCredentials">
+        <FormItem Label="Usuario">
+            <Input @bind-Value="modelo.Usuario" />
+        </FormItem>
+
+        <FormItem Label="Senha">
+            <InputPassword @bind-Value="modelo.Senha" />
+        </FormItem>
+
+        <FormItem>
+            <Button HtmlType="submit">Entrar</Button>
+            <Button @onclick="CreateNewUser">Cadastrar</Button>
+        </FormItem>
+
+    </Form>
+</CardGrid>
+<CardGrid>
+    <Button @onclick="LoginGoogle">Entrar com a conta do Google</Button>
+</CardGrid>
+
+@code {
+    class LoginModel
+    {
+        [Required]
+        public string Usuario { get; set; }
+        [Required]
+        public string Senha { get; set; }
+    }
+    private LoginModel modelo = new LoginModel();
+
+    private Task<IJSObjectReference> _internal;
+    private Task<IJSObjectReference> Module => _internal ??= jsruntime.InvokeAsync<IJSObjectReference>("import", "./js/Authentication.js").AsTask();
+
+    private async Task LoginCredentials()
+    {
+        var mod = await Module;
+        var token = await mod.InvokeAsync<string>("LoginCredentials", modelo.Usuario, modelo.Senha);
+        Console.WriteLine(token);
+    }
+
+    private async Task LoginGoogle()
+    {
+        var mod = await Module;
+        var token = await mod.InvokeAsync<string>("LoginGoogle", modelo.Usuario, modelo.Senha);
+        Console.WriteLine(token);
+    }
+    private async Task CreateNewUser()
+    {
+        var mod = await Module;
+        var created = await mod.InvokeAsync<bool>("CreateUser", modelo.Usuario, modelo.Senha);
+        if (created)
+        {
+            Console.WriteLine("Usuario foi criado com sucesso!");
+        }
+        else
+        {
+            Console.WriteLine("Erro ao criar um usuario!");
+        }
+    }
+
+}
